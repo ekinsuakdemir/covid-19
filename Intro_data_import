@@ -1,0 +1,103 @@
+---
+title: "COVID-19 Virus Hospitilazation Trends"
+author: "Ekin Su Akdemir"
+date: "5/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Investigating which countries have the highest numner of Covid-19 hospitalizations against cumilative number of positive cases
+
+## Understanding Data
+
+Here, I use a dataset from Kaggle, which was collected between the 20th of January and the 1st of June 2020.
+
+```{r}
+
+library(readr)
+library(dplyr)
+library(tibble)
+
+covid_df <- read_csv("covid19.csv")
+
+#Determine dimensions of covid_df by using function dim()
+dim(covid_df)
+
+#Determine the colmun names of covid_df using the colnames()function
+
+vector_cols <-colnames(covid_df)
+print(vector_cols)
+
+# Use head() or glimpse () to see if there are inconsistencies. 
+head(covid_df)
+glimpse(covid_df)
+```
+
+
+## Cleaning the Data
+
+Province_State column has data from country level and state level. Clean this dataframe so that it has data only on country level.
+
+
+```{r}
+covid_df_all_states <- covid_df %>%  filter(Province_State == "All States") %>%
+  select(-Province_State)
+glimpse(covid_df_all_states)
+```
+
+Daily data should be seperated from the cumilative data. 
+
+```{r}
+covid_df_all_states_daily <- covid_df_all_states %>% select(Date, Country_Region, active, daily_tested, daily_positive, hospitalizedCurr)
+
+```
+
+My goal is to extract hospitilizations and cases data by top 10 countries. 
+
+```{r}
+#Group columns by Country_Region with group_by() and summarize() functions and arrange it in descending order with arrange()
+covid_df_all_states_sum <- covid_df_all_states_daily %>% group_by(Country_Region) %>%
+  summarize(hospitalized = sum(hospitalizedCurr), positive = sum(daily_positive), active = sum(active), tested=sum(daily_tested), proportion_hosp_positive= hospitalized/positive, proportion = positive/tested) %>% 
+              arrange(desc(tested))
+              
+covid_top_10 <- head(covid_df_all_states_sum, 10)
+```
+
+##Getting vectors
+Extract the vectors from the covid_top_10 dataframe
+
+```{r}
+
+countries <- covid_top_10$Country_Region
+tested_cases <- covid_top_10$tested
+positive_cases <- covid_top_10$positive
+active_cases <- covid_top_10$active
+hospitalized_cases <- covid_top_10$hospitalized
+
+```
+##Naming vectors
+
+```{r}
+names(positive_cases) <- countries
+names(tested_cases) <- countries
+names(active_cases) <- countries
+names(hospitalized_cases) <- countries
+```
+
+##Identifying top three positive against tested cases.
+
+```{r}
+positive_cases
+sum(positive_cases)
+mean(positive_cases)
+positive_cases/sum(positive_cases)
+positive_tested_top_3 <- c("United States" = 0.6,"Italy" = 0.08, "Russia" = 0.1)
+```
+
+
+
